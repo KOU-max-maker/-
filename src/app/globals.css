@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f6f1e7;
+  --paper-deep: #ece4d4;
+  --ink: #2b2620;
+  --ink-soft: #6f6558;
+  --accent: #b5562f;
+  --line: #d9cfbd;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1c1915;
+    --paper-deep: #26221c;
+    --ink: #ece4d6;
+    --ink-soft: #a89d8c;
+    --accent: #e08a5f;
+    --line: #3a342b;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-accent: var(--accent);
+  --color-line: var(--line);
+  --font-serif: var(--font-serif-jp), "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iPhone で入力欄フォーカス時に自動ズームさせない（16px 未満だとズームされる） */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
