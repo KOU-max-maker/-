@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { formatDateJa, isDateKey } from "@/lib/date";
 
@@ -55,12 +55,11 @@ export async function POST(request: Request) {
   const client = new Anthropic();
 
   try {
-    const response = await client.beta.messages.parse({
-      model: "claude-opus-5-5",
+    // 費用を抑えるため Haiku＋effort low。日記の編集なら深い思考は不要。
+    const response = await client.messages.parse({
+      model: "claude-haiku-5-5",
       max_tokens: 16000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: "medium", format: betaZodOutputFormat(StorySchema) },
+      output_config: { effort: "low", format: zodOutputFormat(StorySchema) },
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userContent }],
     });
