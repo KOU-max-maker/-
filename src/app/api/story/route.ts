@@ -32,11 +32,11 @@ const SYSTEM_PROMPT = `あなたは、ある人の日記を、本人の一人称
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
-    return Response.json(
-      { error: "サーバーにAIのAPIキーが設定されていません（ANTHROPIC_API_KEY）" },
-      { status: 503 },
-    );
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) return fail("サーバーにAIのAPIキーが設定されていません（ANTHROPIC_API_KEY）", 503);
+  // 全角文字や見えない文字が混じるとSDKがTypeErrorで落ちるため先に弾く
+  if (!/^[\x21-\x7e]+$/.test(apiKey)) {
+    return fail("ANTHROPIC_API_KEY に全角文字や空白が混じっています。Vercelで貼り直してください", 503);
   }
 
   const parsed = RequestSchema.safeParse(await request.json().catch(() => null));
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     .filter(Boolean)
     .join("\n\n");
 
-  const client = new Anthropic();
+  const client = new Anthropic({ apiKey });
 
   try {
     // 費用を抑えるため Haiku＋effort low。日記の編集なら深い思考は不要。
@@ -95,7 +95,9 @@ export async function POST(request: Request) {
     if (error instanceof Anthropic.AnthropicError) {
       return fail("生成結果を読み取れませんでした。もう一度お試しください", 502);
     }
-    return fail("文章の生成中に予期しないエラーが起きました", 500);
+    // 本人しか使えない（Basic認証の内側）ため、原因調査用にエラー内容を見せる
+    const detail = error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 200) : String(error);
+    return fail(`文章の生成中に予期しないエラーが起きました（${detail}）`, 500);
   }
 }
 
