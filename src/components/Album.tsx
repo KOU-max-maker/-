@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { addDays, dateFromHash, todayKey } from "@/lib/date";
+import { addDays, dateFromHash, isDateKey, todayKey } from "@/lib/date";
 import { DayPage } from "./DayPage";
 
 const TURN_MS = 280;
@@ -164,6 +164,18 @@ export function Album() {
 
       <nav className="pointer-events-none absolute inset-x-0 top-0 flex justify-between p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="pointer-events-auto flex gap-2">
+          {/* 過去の日へ一気に飛ぶ。透明な日付入力を重ねて iOS 標準の日付ピッカーを開く */}
+          <label className={`${chip} relative`}>
+            日付
+            <input
+              type="date"
+              value={date}
+              max={today}
+              onChange={(e) => isDateKey(e.target.value) && e.target.value <= today && setDate(e.target.value)}
+              aria-label="日付を選ぶ"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </label>
           {date !== today && (
             <button onClick={() => setDate(today)} className={chip}>
               今日へ
