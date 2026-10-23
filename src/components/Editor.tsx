@@ -174,7 +174,8 @@ export function Editor() {
         }),
       });
       const body = (await res.json().catch(() => ({}))) as { title?: string; story?: string; error?: string };
-      if (!res.ok || !body.story) throw new Error(body.error ?? "文章の生成に失敗しました");
+      if (res.status === 401) throw new Error("ログインが切れました。ページを再読み込みしてください");
+      if (!res.ok || !body.story) throw new Error(body.error ?? `文章の生成に失敗しました（HTTP ${res.status}）`);
       setPreviousStory(fields.story.trim() ? { title: fields.title, story: fields.story } : null);
       update({ story: body.story, title: fields.title.trim() ? fields.title : (body.title ?? "") });
       setGenState("idle");

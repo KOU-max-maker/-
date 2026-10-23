@@ -28,6 +28,9 @@ const SYSTEM_PROMPT = `あなたは、ある人の日記を、本人の一人称
 - 文字起こしの言い間違い・フィラー（えーと、あの）・重複は自然に整える。
 - 本文は日本語の地の文。見出しや箇条書き、絵文字は使わない。段落は改行で区切る。`;
 
+// 長い語りから長い物語を書く日もあるため余裕を持たせる
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
     return Response.json(
@@ -72,16 +75,30 @@ export async function POST(request: Request) {
     }
     return Response.json(response.parsed_output);
   } catch (error) {
+    // 原因を画面とVercelのログの両方で追えるよう、すべての失敗をJSONで返す
+    console.error("story generation failed", error);
+    if (error instanceof Anthropic.AuthenticationError) {
+      return fail("APIキーが無効です。Vercelの ANTHROPIC_API_KEY を確認してください", 502);
+    }
     if (error instanceof Anthropic.RateLimitError) {
-      return Response.json({ error: "混み合っています。少し待ってから再試行してください" }, { status: 429 });
+      return fail("混み合っています。少し待ってから再試行してください", 429);
     }
     if (error instanceof Anthropic.APIConnectionError) {
-      return Response.json({ error: "AIに接続できませんでした。通信状況を確認してください" }, { status: 502 });
+      return fail("AIに接続できませんでした。通信状況を確認してください", 502);
     }
     if (error instanceof Anthropic.APIError) {
-      console.error("story generation failed", error.status, error.message);
-      return Response.json({ error: "文章の生成に失敗しました。もう一度お試しください" }, { status: 502 });
+      if (/credit balance/i.test(error.message)) {
+        return fail("Anthropicのクレジット残高が不足しています。Consoleでチャージしてください", 502);
+      }
+      return fail(`文章の生成に失敗しました（AI API ${error.status ?? "?"}）`, 502);
     }
-    throw error;
+    if (error instanceof Anthropic.AnthropicError) {
+      return fail("生成結果を読み取れませんでした。もう一度お試しください", 502);
+    }
+    return fail("文章の生成中に予期しないエラーが起きました", 500);
   }
+}
+
+function fail(message: string, status: number) {
+  return Response.json({ error: message }, { status });
 }
